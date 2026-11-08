@@ -1,6 +1,19 @@
+@import './styles/se-tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Charte v2 : `rounded-se` / `rounded-se-sm` sont les angles 14 / 10 px de la charte.
+   Tailwind a aussi un utilitaire logique « coin start-end » du même nom : on tranche ici. */
+@layer utilities {
+  .rounded-se {
+    border-radius: var(--se-radius);
+  }
+  .rounded-se-sm {
+    border-radius: var(--se-radius-sm);
+  }
+}
 
 
 @layer base {

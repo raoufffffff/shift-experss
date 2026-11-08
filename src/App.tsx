@@ -56,7 +56,7 @@ const ApplicationsHistoryPage = lazy(() => import('./pages/applications/Applicat
 const ChatPage = lazy(() => import('./pages/chat/ChatPage'))
 
 // Refonte de l'espace client (v2) — montée en parallèle sous /:locale/v2
-import './styles/v2-tokens.css'
+// (jetons `se-*` chargés par index.css → styles/se-tokens.css)
 const V2Layout = lazy(() => import('./pages/v2/V2Layout').then(m => ({ default: m.V2Layout })))
 const V2HomeRoute = lazy(() => import('./pages/v2/HomeRoute').then(m => ({ default: m.HomeRoute })))
 const V2DashboardPage = lazy(() => import('./pages/v2/DashboardPage').then(m => ({ default: m.DashboardPage })))

@@ -91,8 +91,6 @@ export default {
         'se-md': 'var(--se-shadow-md)',
       },
       borderRadius: {
-        se: 'var(--se-radius)',
-        'se-sm': 'var(--se-radius-sm)',
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
