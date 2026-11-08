@@ -60,7 +60,7 @@ const ChatPage = lazy(() => import('./pages/chat/ChatPage'))
 const V2Layout = lazy(() => import('./pages/v2/V2Layout').then(m => ({ default: m.V2Layout })))
 const V2HomeRoute = lazy(() => import('./pages/v2/HomeRoute').then(m => ({ default: m.HomeRoute })))
 const V2DashboardPage = lazy(() => import('./pages/v2/real/RealDashboardPage').then(m => ({ default: m.RealDashboardPage })))
-const V2MessagesPage = lazy(() => import('./pages/v2/MessagesPage').then(m => ({ default: m.MessagesPage })))
+const V2MessagesPage = lazy(() => import('./pages/v2/real/RealMessagesPage').then(m => ({ default: m.RealMessagesPage })))
 const V2FacturesPage = lazy(() => import('./pages/v2/FacturesPage').then(m => ({ default: m.FacturesPage })))
 const V2ReglagesPage = lazy(() => import('./pages/v2/ReglagesPage').then(m => ({ default: m.ReglagesPage })))
 
