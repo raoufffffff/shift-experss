@@ -5,19 +5,23 @@ interface SignupStepIndicatorProps {
 }
 
 export function SignupStepIndicator({ currentStep }: SignupStepIndicatorProps) {
+  const dot = (n: number) => (
+    <div
+      className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
+        currentStep >= n ? 'bg-se-blue text-white' : 'bg-se-surface-2 text-se-muted border border-se-line'
+      }`}
+    >
+      {currentStep > n ? <Check className="w-3.5 h-3.5" /> : n}
+    </div>
+  )
+  const bar = (n: number) => <div className={`h-0.5 w-8 rounded ${currentStep >= n ? 'bg-se-blue' : 'bg-se-line'}`} />
   return (
-    <div className="flex items-center justify-center gap-2 mb-8">
-      <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 1 ? 'bg-primary text-white' : 'bg-gray-200 text-gray-400'} font-semibold text-sm`}>
-        {currentStep > 1 ? <Check className="w-4 h-4" /> : '1'}
-      </div>
-      <div className={`h-0.5 w-8 ${currentStep >= 2 ? 'bg-primary' : 'bg-gray-200'}`}></div>
-      <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 2 ? 'bg-primary text-white' : 'bg-gray-200 text-gray-400'} font-semibold text-sm`}>
-        {currentStep > 2 ? <Check className="w-4 h-4" /> : '2'}
-      </div>
-      <div className={`h-0.5 w-8 ${currentStep >= 3 ? 'bg-primary' : 'bg-gray-200'}`}></div>
-      <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 3 ? 'bg-primary text-white' : 'bg-gray-200 text-gray-400'} font-semibold text-sm`}>
-        3
-      </div>
+    <div className="flex items-center justify-center gap-2 mb-6">
+      {dot(1)}
+      {bar(2)}
+      {dot(2)}
+      {bar(3)}
+      {dot(3)}
     </div>
   )
 }

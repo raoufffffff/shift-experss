@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Mail, Lock, ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { AuthSpinner, seInputIconCls, sePrimaryBtnCls, seSecondaryBtnCls } from '@/components/auth/AuthShell'
 import type { UseSignupFormReturn } from '../hooks/useSignupForm'
 
 interface SignupStep3Props {
@@ -23,17 +24,17 @@ export function SignupStep3({ form }: SignupStep3Props) {
       className="space-y-5"
     >
       {/* Step Title */}
-      <h2 className="text-lg font-semibold text-gray-800 text-center mb-2">
+      <h2 className="font-display font-bold text-base text-se-ink text-center">
         {t('auth.stepYourAccount')}
       </h2>
 
       {/* Email */}
       <div>
-        <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+        <label htmlFor="email" className="se-eyebrow block mb-1.5">
           {t('auth.emailProfessional')}
         </label>
-        <div className="relative group">
-          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" />
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-se-muted" />
           <input
             id="email"
             type="email"
@@ -41,18 +42,18 @@ export function SignupStep3({ form }: SignupStep3Props) {
             onChange={(e) => form.setEmail(e.target.value)}
             placeholder={t('auth.emailPlaceholder')}
             required
-            className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all duration-200"
+            className={seInputIconCls}
           />
         </div>
       </div>
 
       {/* Password */}
       <div>
-        <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+        <label htmlFor="password" className="se-eyebrow block mb-1.5">
           {t('auth.password')}
         </label>
-        <div className="relative group">
-          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" />
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-se-muted" />
           <input
             id="password"
             type={form.showPassword ? "text" : "password"}
@@ -61,25 +62,25 @@ export function SignupStep3({ form }: SignupStep3Props) {
             placeholder={t('auth.passwordPlaceholder')}
             required
             minLength={8}
-            className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all duration-200"
+            className={`${seInputIconCls} pr-10`}
           />
           <button
             type="button"
             onClick={() => form.setShowPassword(!form.showPassword)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-se-muted hover:text-se-ink"
           >
-            {form.showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            {form.showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
       </div>
 
       {/* Confirm Password */}
       <div>
-        <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2">
+        <label htmlFor="confirmPassword" className="se-eyebrow block mb-1.5">
           {t('auth.confirmPassword')}
         </label>
-        <div className="relative group">
-          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" />
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-se-muted" />
           <input
             id="confirmPassword"
             type={form.showConfirmPassword ? "text" : "password"}
@@ -88,56 +89,46 @@ export function SignupStep3({ form }: SignupStep3Props) {
             placeholder={t('auth.confirmPasswordPlaceholder')}
             required
             minLength={8}
-            className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all duration-200"
+            className={`${seInputIconCls} pr-10`}
           />
           <button
             type="button"
             onClick={() => form.setShowConfirmPassword(!form.showConfirmPassword)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-se-muted hover:text-se-ink"
           >
-            {form.showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            {form.showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
         {/* Inline error message */}
         {form.confirmPassword && form.password !== form.confirmPassword && (
-          <p className="mt-2 text-sm text-red-600">
+          <p className="mt-2 text-sm text-se-danger">
             {t('auth.passwordMismatch')}
           </p>
         )}
       </div>
 
       {/* Buttons */}
-      <div className="flex gap-3 mt-8">
-        <motion.button
+      <div className="grid grid-cols-2 gap-3 pt-2">
+        <button
           type="button"
           onClick={form.handlePreviousStep}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-4 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+          className={seSecondaryBtnCls}
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-4 h-4" />
           {t('auth.previousStep')}
-        </motion.button>
+        </button>
 
-        <motion.button
+        <button
           type="submit"
           disabled={form.isLoading}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="flex-1 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold py-4 px-4 rounded-xl shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          className={sePrimaryBtnCls}
         >
           {form.isLoading ? (
-            <span className="flex items-center justify-center gap-2">
-              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              {t('auth.submitting')}
-            </span>
+            <span className="inline-flex items-center gap-2"><AuthSpinner />{t('auth.submitting')}</span>
           ) : (
             t('auth.submitSignup')
           )}
-        </motion.button>
+        </button>
       </div>
     </motion.form>
   )
