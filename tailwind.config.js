@@ -16,8 +16,36 @@ export default {
     extend: {
       fontFamily: {
         'sans': ['Plus Jakarta Sans', 'system-ui', '-apple-system', 'sans-serif'],
+        // Espace client v2 (jetons dans src/styles/v2-tokens.css)
+        'display': ['Plus Jakarta Sans', 'system-ui', '-apple-system', 'sans-serif'],
       },
       colors: {
+        // Espace client v2 : bg-se-*, text-se-*, border-se-*
+        se: {
+          bg: 'var(--se-bg)',
+          surface: 'var(--se-surface)',
+          'surface-2': 'var(--se-surface-2)',
+          line: 'var(--se-line)',
+          'line-soft': 'var(--se-line-soft)',
+          ink: 'var(--se-ink)',
+          muted: 'var(--se-muted)',
+          blue: 'var(--se-blue)',
+          'blue-ink': 'var(--se-blue-ink)',
+          'blue-wash': 'var(--se-blue-wash)',
+          success: 'var(--se-success)',
+          'success-wash': 'var(--se-success-wash)',
+          danger: 'var(--se-danger)',
+          'danger-wash': 'var(--se-danger-wash)',
+          cascade: 'var(--se-cascade)',
+          'cascade-ink': 'var(--se-cascade-ink)',
+          'cascade-wash': 'var(--se-cascade-wash)',
+          freelance: 'var(--se-freelance)',
+          'freelance-ink': 'var(--se-freelance-ink)',
+          'freelance-wash': 'var(--se-freelance-wash)',
+          extra: 'var(--se-extra)',
+          'extra-ink': 'var(--se-extra-ink)',
+          'extra-wash': 'var(--se-extra-wash)',
+        },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
@@ -58,7 +86,13 @@ export default {
           accent: 'hsl(var(--sidebar-accent))',
         },
       },
+      boxShadow: {
+        se: 'var(--se-shadow)',
+        'se-md': 'var(--se-shadow-md)',
+      },
       borderRadius: {
+        se: 'var(--se-radius)',
+        'se-sm': 'var(--se-radius-sm)',
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',

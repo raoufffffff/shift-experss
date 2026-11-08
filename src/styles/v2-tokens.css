@@ -1,0 +1,53 @@
+/*
+ * Jetons de design de l'espace client v2 (préfixe `se-`).
+ *
+ * ⚠️  VALEURS PROVISOIRES — les jetons d'origine n'ont pas été fournis avec les
+ * fichiers du nouveau design. Les noms correspondent exactement à ceux utilisés
+ * dans `pages/v2/**` (bg-se-*, text-se-*, border-se-*, rounded-se*, shadow-se*,
+ * font-display, .se-root) ; seules les couleurs/valeurs sont à remplacer par
+ * celles de la maquette. Tout se règle ici, rien d'autre ne change.
+ *
+ * Thème clair uniquement (comme indiqué dans V2Layout).
+ */
+.se-root {
+  --se-bg: #f6f7fb;
+  --se-surface: #ffffff;
+  --se-surface-2: #f0f2f8;
+  --se-line: #e3e6ef;
+  --se-line-soft: #eceff6;
+  --se-ink: #141a2e;
+  --se-muted: #667089;
+
+  --se-blue: #2347d8;
+  --se-blue-ink: #1b37a8;
+  --se-blue-wash: #e9eefd;
+
+  --se-success: #12805c;
+  --se-success-wash: #e3f6ee;
+  --se-danger: #d23b3b;
+  --se-danger-wash: #fdeaea;
+
+  /* Cascade (bascule programmée vers les auto-entrepreneurs) */
+  --se-cascade: #7a4fd6;
+  --se-cascade-ink: #5b35b0;
+  --se-cascade-wash: #f0eafc;
+
+  /* Auto-entrepreneurs / freelances */
+  --se-freelance: #c2650a;
+  --se-freelance-ink: #9a4e06;
+  --se-freelance-wash: #fdf1e2;
+
+  /* Extras (renforts ponctuels) */
+  --se-extra: #0f7f95;
+  --se-extra-ink: #0b6173;
+  --se-extra-wash: #e2f4f8;
+
+  --se-radius: 14px;
+  --se-radius-sm: 9px;
+  --se-shadow: 0 1px 2px rgba(20, 26, 46, 0.06), 0 1px 3px rgba(20, 26, 46, 0.08);
+  --se-shadow-md: 0 4px 12px rgba(20, 26, 46, 0.1), 0 2px 4px rgba(20, 26, 46, 0.06);
+
+  background: var(--se-bg);
+  color: var(--se-ink);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
