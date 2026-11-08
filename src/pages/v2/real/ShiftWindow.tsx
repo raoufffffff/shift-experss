@@ -7,10 +7,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { X, Check, ExternalLink, Loader2, MapPin, Clock, Ban } from 'lucide-react';
+import { X, Check, ExternalLink, Loader2, MapPin, Clock, Ban, Timer, BadgeCheck, CalendarClock, CalendarPlus, Zap, PhoneCall, UserCheck, BellRing, UserX, Undo2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { useShiftDetail } from '@/pages/shifts/hooks/useShiftDetail';
+import { AdjustHoursDialog } from '@/components/shifts/AdjustHoursDialog';
+import { ValidateShiftDialog } from '@/components/shifts/ValidateShiftDialog';
+import { BoostShiftDialog } from '@/components/shifts/BoostShiftDialog';
+import { RescheduleShiftDialog } from '@/components/shifts/RescheduleShiftDialog';
+import { AutoCallDialog } from '@/pages/shifts/components/AutoCallDialog';
+import { ConvertToEmployeesDialog } from '@/pages/shifts/components/ConvertToEmployeesDialog';
+import { ExtendShiftDialog } from '@/pages/shifts/components/ExtendShiftDialog';
 import { coverageBand, Face } from './MissionCard';
 import { PersonWindow, type PersonRef } from './PersonWindow';
 import type { PlacedPerson } from './usePlanningMissions';
@@ -48,7 +55,15 @@ export function ShiftWindow({ shiftId, onClose }: { shiftId: string; onClose: ()
   const { locale = 'fr' } = useParams<{ locale: string }>();
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
-  const { shift, isLoading, freelancerApplications, hasAcceptedApplicant, mutations } = useShiftDetail(shiftId);
+  const detail = useShiftDetail(shiftId);
+  const {
+    shift, isLoading, freelancerApplications, hasAcceptedApplicant, mutations,
+    adjustHoursDialogOpen, setAdjustHoursDialogOpen, isValidateDialogOpen, setIsValidateDialogOpen,
+    isBoostDialogOpen, setIsBoostDialogOpen, isBoostable, isRescheduleDialogOpen, setIsRescheduleDialogOpen,
+    canReschedule, rescheduleTargetShifts, canConvertToEmployees, isConvertDialogOpen, setIsConvertDialogOpen,
+    eventGroupSummary, autoCallStatus, isAutoCallDialogOpen, setIsAutoCallDialogOpen,
+  } = detail;
+  const [isExtendOpen, setIsExtendOpen] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [person, setPerson] = useState<PersonRef | null>(null);
 
@@ -81,12 +96,12 @@ export function ShiftWindow({ shiftId, onClose }: { shiftId: string; onClose: ()
   const required: number = s?.required_employees || 1;
 
   const { placed, candidates } = useMemo(() => {
-    const placed: (PlacedPerson & { sub: string; personId: string })[] = [];
+    const placed: (PlacedPerson & { sub: string; personId: string; appId?: string; noShow?: boolean })[] = [];
     const candidates: Candidate[] = [];
     for (const a of (s?.shift_applications ?? []) as any[]) {
       const name = [a.user?.first_name, a.user?.last_name].filter(Boolean).join(' ') || a.user?.email || 'Salarié';
       if (a.status === 'accepted')
-        placed.push({ id: `e-${a.id}`, personId: a.user_id, name, photo: a.user?.avatar_url ?? null, kind: 'salarie', sub: a.user?.email ?? '' });
+        placed.push({ id: `e-${a.id}`, appId: a.id, noShow: !!a.no_show, personId: a.user_id, name, photo: a.user?.avatar_url ?? null, kind: 'salarie', sub: a.user?.email ?? '' });
       else if (a.status === 'applied' || a.status === 'pending')
         candidates.push({ key: `e-${a.id}`, appId: a.id, personId: a.user_id, kind: 'salarie', name, sub: a.user?.email ?? '', photo: a.user?.avatar_url ?? null });
     }
@@ -181,9 +196,21 @@ export function ShiftWindow({ shiftId, onClose }: { shiftId: string; onClose: ()
                             <span className="block text-xs text-se-muted truncate">{p.sub}</span>
                           </span>
                         </button>
+                        {p.noShow && <span className="se-badge bg-se-danger-wash text-se-danger">Absent</span>}
                         <span className={`se-badge ${p.kind === 'freelance' ? 'bg-se-freelance-wash text-se-freelance-ink' : 'bg-se-blue-wash text-se-blue-ink'}`}>
                           {p.kind === 'freelance' ? 'Auto-entrepreneur' : 'Salarié'}
                         </span>
+                        {p.kind === 'salarie' && p.appId && !terminal && (
+                          p.noShow ? (
+                            <button type="button" title="Annuler l'absence" aria-label="Annuler l'absence" onClick={() => mutations.cancelNoShow.mutate(p.appId!)} className="p-1.5 rounded-se-sm text-se-muted hover:text-se-ink hover:bg-se-surface-2">
+                              <Undo2 className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <button type="button" title="Signaler une absence" aria-label="Signaler une absence" onClick={() => mutations.reportNoShow.mutate(p.appId!)} className="p-1.5 rounded-se-sm text-se-muted hover:text-se-danger hover:bg-se-danger-wash">
+                              <UserX className="w-4 h-4" />
+                            </button>
+                          )
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -264,13 +291,32 @@ export function ShiftWindow({ shiftId, onClose }: { shiftId: string; onClose: ()
               )}
 
               {/* Actions */}
-              <section className="space-y-2 pt-2 border-t border-se-line">
+              <section className="space-y-3 pt-2 border-t border-se-line">
+                <p className="se-eyebrow">Actions</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(status === 'completed' || status === 'pending_validation') && (
+                    <ActionBtn icon={Timer} label="Ajuster les heures" onClick={() => setAdjustHoursDialogOpen(true)} />
+                  )}
+                  {status === 'pending_validation' && (
+                    <ActionBtn icon={BadgeCheck} label="Valider les heures" primary onClick={() => setIsValidateDialogOpen(true)} />
+                  )}
+                  {canReschedule && <ActionBtn icon={CalendarClock} label="Changer le créneau" onClick={() => setIsRescheduleDialogOpen(true)} />}
+                  {status === 'completed' && !s.is_extended && <ActionBtn icon={CalendarPlus} label="Prolonger" onClick={() => setIsExtendOpen(true)} />}
+                  {isBoostable && <ActionBtn icon={Zap} label="Booster" onClick={() => setIsBoostDialogOpen(true)} />}
+                  {!!autoCallStatus && (autoCallStatus.enabled || autoCallStatus.visible) && (
+                    <ActionBtn icon={PhoneCall} label="Relance par appel" onClick={() => setIsAutoCallDialogOpen(true)} />
+                  )}
+                  {canConvertToEmployees && <ActionBtn icon={UserCheck} label="Convertir en salariés" onClick={() => setIsConvertDialogOpen(true)} />}
+                  {(status === 'pending' || status === 'partially_filled') && (
+                    <ActionBtn icon={BellRing} label="Relancer" disabled={mutations.sendReminder.isPending} onClick={() => mutations.sendReminder.mutate()} />
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => navigate(`/${locale}/shifts/${shiftId}`)}
                   className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 rounded-se-sm text-sm font-semibold border border-se-line bg-se-surface text-se-ink hover:bg-se-surface-2"
                 >
-                  <ExternalLink className="w-4 h-4" aria-hidden="true" /> Fiche complète (heures, boost, replanification)
+                  <ExternalLink className="w-4 h-4" aria-hidden="true" /> Fiche complète (frais de transport…)
                 </button>
                 {!terminal && !hasAcceptedApplicant && (
                   confirmCancel ? (
@@ -303,7 +349,71 @@ export function ShiftWindow({ shiftId, onClose }: { shiftId: string; onClose: ()
           </>
         )}
       </aside>
+      <WindowDialogs
+        shift={s}
+        detail={detail}
+        isExtendOpen={isExtendOpen}
+        setIsExtendOpen={setIsExtendOpen}
+      />
       {person && <PersonWindow person={person} onClose={() => setPerson(null)} />}
     </div>
+  );
+}
+
+function ActionBtn({ icon: Icon, label, onClick, primary, disabled }: { icon: typeof Timer; label: string; onClick: () => void; primary?: boolean; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-se-sm text-sm font-semibold transition-colors disabled:opacity-50 ${
+        primary ? 'bg-se-blue text-white hover:bg-se-blue-ink' : 'border border-se-line bg-se-surface text-se-ink hover:bg-se-surface-2'
+      }`}
+    >
+      <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+      <span className="truncate">{label}</span>
+    </button>
+  );
+}
+
+/** Dialogues existants (logique + Supabase inchangés), ouverts depuis les actions de la fenêtre. */
+function WindowDialogs({ shift, detail, isExtendOpen, setIsExtendOpen }: { shift: any; detail: ReturnType<typeof useShiftDetail>; isExtendOpen: boolean; setIsExtendOpen: (v: boolean) => void }) {
+  if (!shift || !detail.isAdminOrManager) return null;
+  const d = detail;
+  return (
+    <>
+      <AdjustHoursDialog open={d.adjustHoursDialogOpen} onOpenChange={d.setAdjustHoursDialogOpen} shift={shift} />
+      <ValidateShiftDialog isOpen={d.isValidateDialogOpen} onClose={() => d.setIsValidateDialogOpen(false)} shift={shift} />
+      <BoostShiftDialog shift={shift as any} isOpen={d.isBoostDialogOpen} onClose={() => d.setIsBoostDialogOpen(false)} onSuccess={() => undefined} />
+      <AutoCallDialog
+        open={d.isAutoCallDialogOpen}
+        onOpenChange={d.setIsAutoCallDialogOpen}
+        status={d.autoCallStatus}
+        isPending={d.mutations.setAutoCalls.isPending}
+        onToggle={(enabled) => d.mutations.setAutoCalls.mutate(enabled)}
+        t={d.t}
+      />
+      <ConvertToEmployeesDialog
+        open={d.isConvertDialogOpen}
+        onOpenChange={d.setIsConvertDialogOpen}
+        shift={{ id: shift.id, company_id: shift.company_id, establishment_id: shift.establishment_id }}
+        alreadyInvitedUserIds={(shift.shift_applications || [])
+          .filter((a: any) => ['pending', 'applied', 'accepted'].includes(a.status))
+          .map((a: any) => a.user_id)}
+        daysCount={d.eventGroupSummary?.daysCount ?? 1}
+        pendingFreelancerCount={d.freelancerApplications.filter((a: any) => a.status === 'applied').length}
+        isPending={d.mutations.convertToEmployees.isPending}
+        onConfirm={(userIds: string[]) => d.mutations.convertToEmployees.mutate(userIds)}
+      />
+      <RescheduleShiftDialog
+        open={d.isRescheduleDialogOpen}
+        onOpenChange={d.setIsRescheduleDialogOpen}
+        shifts={d.rescheduleTargetShifts}
+        isPending={d.mutations.rescheduleShift.isPending}
+        onConfirm={(entries: any) => d.mutations.rescheduleShift.mutate(entries)}
+        t={d.t}
+      />
+      {shift.status === 'completed' && <ExtendShiftDialog shift={shift} open={isExtendOpen} onOpenChange={setIsExtendOpen} />}
+    </>
   );
 }
