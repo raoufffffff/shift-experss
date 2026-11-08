@@ -55,6 +55,15 @@ const ApplicationsHistoryPage = lazy(() => import('./pages/applications/Applicat
 
 const ChatPage = lazy(() => import('./pages/chat/ChatPage'))
 
+// Refonte de l'espace client (v2) — montée en parallèle sous /:locale/v2
+import './styles/v2-tokens.css'
+const V2Layout = lazy(() => import('./pages/v2/V2Layout').then(m => ({ default: m.V2Layout })))
+const V2HomeRoute = lazy(() => import('./pages/v2/HomeRoute').then(m => ({ default: m.HomeRoute })))
+const V2DashboardPage = lazy(() => import('./pages/v2/DashboardPage').then(m => ({ default: m.DashboardPage })))
+const V2MessagesPage = lazy(() => import('./pages/v2/MessagesPage').then(m => ({ default: m.MessagesPage })))
+const V2FacturesPage = lazy(() => import('./pages/v2/FacturesPage').then(m => ({ default: m.FacturesPage })))
+const V2ReglagesPage = lazy(() => import('./pages/v2/ReglagesPage').then(m => ({ default: m.ReglagesPage })))
+
 const PageLoader = () => {
   return (
     <div className="flex items-center justify-center h-full w-full py-20">
@@ -291,6 +300,24 @@ useEffect(() => {
                 <Route path="support/documentation" element={<Documentation />} />
                 <Route path="team" element={<TeamPage />} />
                 <Route path="admin/audit-logs" element={<PageErrorBoundary pageName="AuditLogs"><AuditLogsPage /></PageErrorBoundary>} />
+              </Route>
+
+              {/* Refonte v2 : /:locale/v2 (mêmes droits que l'espace actuel) */}
+              <Route
+                path="v2"
+                element={
+                  user && (user.role === 'admin' || user.role === 'manager') ? (
+                    <V2Layout />
+                  ) : (
+                    <Navigate to="../login" replace />
+                  )
+                }
+              >
+                <Route index element={<V2HomeRoute />} />
+                <Route path="tableau-de-bord" element={<V2DashboardPage />} />
+                <Route path="messages" element={<V2MessagesPage />} />
+                <Route path="factures" element={<V2FacturesPage />} />
+                <Route path="reglages" element={<V2ReglagesPage />} />
               </Route>
             </Route>
 
