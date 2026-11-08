@@ -3,7 +3,8 @@
  * Vues Jour · Semaine (grille par poste) · Mois. Un clic sur une carte ouvre le
  * détail du shift ; « Publier un shift » ouvre la création existante.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CalendarDays, ChevronLeft, ChevronRight, Building2, Plus, Loader2 } from 'lucide-react';
 import { useEstablishmentStore } from '@/stores/establishmentStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -88,7 +89,17 @@ export function RealPlanningPage() {
   const { placed, required } = sum(inPeriod);
   const coverage = required > 0 ? Math.round((placed / required) * 100) : null;
 
-  const [openId, setOpenId] = useState<string | null>(null);
+  // Ouverture directe d'un shift depuis le Tableau de bord : /v2?shift=<id>
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [openId, setOpenId] = useState<string | null>(searchParams.get('shift'));
+  useEffect(() => {
+    if (searchParams.has('shift')) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('shift');
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const open = (id: string) => setOpenId(id);
   const [publishing, setPublishing] = useState(false);
   const publish = () => setPublishing(true);
