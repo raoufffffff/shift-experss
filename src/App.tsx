@@ -62,7 +62,7 @@ const V2HomeRoute = lazy(() => import('./pages/v2/HomeRoute').then(m => ({ defau
 const V2DashboardPage = lazy(() => import('./pages/v2/real/RealDashboardPage').then(m => ({ default: m.RealDashboardPage })))
 const V2MessagesPage = lazy(() => import('./pages/v2/real/RealMessagesPage').then(m => ({ default: m.RealMessagesPage })))
 const V2FacturesPage = lazy(() => import('./pages/v2/real/RealFacturesPage').then(m => ({ default: m.RealFacturesPage })))
-const V2ReglagesPage = lazy(() => import('./pages/v2/ReglagesPage').then(m => ({ default: m.ReglagesPage })))
+const V2ReglagesPage = lazy(() => import('./pages/v2/real/RealReglagesPage').then(m => ({ default: m.RealReglagesPage })))
 
 const PageLoader = () => {
   return (
