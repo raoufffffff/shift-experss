@@ -2,72 +2,136 @@
  * « Évaluer vos auto-entrepreneurs » — fenêtre proposée à la connexion tant
  * qu'une mission passée a un auto-entrepreneur validé sans évaluation.
  * Une carte par personne et par mission : cinq étoiles, un mot (facultatif),
- * Enregistrer. « Plus tard » referme pour cette session. Les évaluations
- * nourrissent la fiche de la personne (bloc Évaluations, « chez vous »).
+ * Enregistrer. « Plus tard » referme pour cette session.
+ *
+ * Données réelles : mêmes règles d'éligibilité que l'ancien popup
+ * (`fetchPendingFreelancerReviews` : candidatures acceptées, shifts terminés,
+ * un seul avis par événement, pas déjà noté) et même enregistrement
+ * (`submitFreelancerReview` → `freelancer_reviews`). Comme avant, le lot
+ * affiché est marqué « vu » (`review_popup_seen_at`) dès le chargement : la
+ * fenêtre ne revient pas, les avis restent notables depuis la page Avis.
  */
-import { useMemo, useState } from 'react';
-import { MOCK_TODAY } from '@/mocks/v2Today';
+import { useEffect, useRef, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Star, X, Check, ClipboardCheck } from 'lucide-react';
-import type { Mission, MissionPlaced } from '@/mocks/v2Missions';
-import { useV2People, reviewKey } from '@/stores/v2PeopleStore';
+import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
+import { logger } from '@/utils/logger';
+import { useAuthStore } from '@/stores/authStore';
+import { useEstablishmentStore } from '@/stores/establishmentStore';
 import { useV2Ui } from '@/stores/v2UiStore';
-import { useAllMissions, effPlaced } from '../mission/missionStore';
-import { Avatar } from '../Avatar';
-import { parseISO } from '../time';
+import { fetchPendingFreelancerReviews } from '@/pages/reviews/hooks/fetchPendingFreelancerReviews';
+import { submitFreelancerReview } from '@/pages/reviews/hooks/submitFreelancerReview';
+import type { FreelancerApplication } from '@/pages/reviews/types';
 
-/** « Aujourd'hui » de la maquette. */
-const TODAY = MOCK_TODAY;
+const TZ = 'Europe/Paris'; // même défaut que ShiftsPage tant que le fuseau n'est pas chargé ici
 
 const fmtDay = (iso: string) =>
-  parseISO(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TZ });
+const fmtHm = (iso: string) =>
+  new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
 
-interface Pending {
-  mission: Mission;
-  person: MissionPlaced;
-}
+const nameOf = (a: FreelancerApplication) =>
+  a.freelancer?.full_name || `${a.freelancer?.first_name ?? ''} ${a.freelancer?.last_name ?? ''}`.trim() || 'Auto-entrepreneur';
 
-/** Les évaluations en attente : missions passées, auto-entrepreneurs validés, pas encore notés. */
-export function usePendingReviews(): Pending[] {
-  const missions = useAllMissions();
-  const reviews = useV2People((s) => s.reviews);
-  return useMemo(
-    () =>
-      missions
-        .filter((m) => m.date < TODAY)
-        .flatMap((m) =>
-          effPlaced(m)
-            .filter((p) => p.kind === 'freelance' && !p.suggested && !reviews[reviewKey(m.id, p.name)])
-            .map((person) => ({ mission: m, person })),
-        )
-        .sort((a, b) => b.mission.date.localeCompare(a.mission.date)),
-    [missions, reviews],
+function FreelancerPhoto({ name, src }: { name: string; src?: string | null }) {
+  const initials = name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2);
+  return (
+    <span
+      className="relative inline-grid place-items-center rounded-full overflow-hidden shrink-0 w-10 h-10 bg-se-freelance-wash text-se-freelance-ink font-bold text-sm leading-none"
+      aria-hidden="true"
+    >
+      {initials}
+      {src && (
+        <img
+          src={src}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={(e) => (e.currentTarget.style.display = 'none')}
+        />
+      )}
+    </span>
   );
 }
 
+type PendingApp = FreelancerApplication & { review_popup_seen_at?: string | null };
+
 export function PendingReviewsDialog() {
-  const pending = usePendingReviews();
-  const dismissed = useV2People((s) => s.reviewsDismissed);
-  const dismiss = useV2People((s) => s.dismissReviews);
-  const addReview = useV2People((s) => s.addReview);
+  const queryClient = useQueryClient();
+  const company = useAuthStore((s) => s.company);
+  const selectedEstablishmentId = useEstablishmentStore((s) => s.selectedEstablishmentId);
   const log = useV2Ui((s) => s.log);
+
+  const [queue, setQueue] = useState<PendingApp[] | null>(null);
+  const [open, setOpen] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, { rating: number; comment: string }>>({});
   const [justDone, setJustDone] = useState<string[]>([]);
+  const initialized = useRef(false);
 
-  if (dismissed || pending.length === 0) return null;
+  // Une seule fois par session applicative (pas à chaque navigation).
+  const { data } = useQuery({
+    queryKey: ['v2-pending-reviews-popup', company?.id, selectedEstablishmentId],
+    queryFn: () => fetchPendingFreelancerReviews({ companyId: company!.id, establishmentId: selectedEstablishmentId }),
+    enabled: !!company?.id,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
-  const save = (p: Pending) => {
-    const k = reviewKey(p.mission.id, p.person.name);
-    const d = drafts[k];
-    if (!d?.rating) return;
-    addReview({ missionId: p.mission.id, name: p.person.name, rating: d.rating, comment: d.comment.trim() });
-    log({
-      kind: 'personne',
-      label: `${p.person.name} évalué·e ${d.rating}/5`,
-      detail: `${p.mission.poste} · ${fmtDay(p.mission.date)}`,
-      missionId: p.mission.id,
-    });
-    setJustDone((s) => [...s, k]);
-  };
+  useEffect(() => {
+    if (!data || initialized.current) return;
+    const unseen = (data as PendingApp[]).filter((item) => !item.review_popup_seen_at);
+    if (unseen.length === 0) return;
+
+    initialized.current = true;
+    setQueue(unseen);
+    setOpen(true);
+
+    // Tout le lot est marqué « vu » tout de suite, même si la fenêtre est fermée sans noter.
+    supabase
+      .from('shift_freelancer_applications')
+      .update({ review_popup_seen_at: new Date().toISOString() })
+      .in(
+        'id',
+        unseen.map((i) => i.id),
+      )
+      .then(({ error }) => {
+        if (error) logger.error('Failed to mark review popup as seen:', error);
+      });
+  }, [data]);
+
+  const submit = useMutation({
+    mutationFn: async ({ app, rating, comment }: { app: PendingApp; rating: number; comment: string }) => {
+      const establishmentId = app.shift?.establishment_id;
+      if (!establishmentId) throw new Error('Missing establishment_id');
+      await submitFreelancerReview({
+        mode: 'create',
+        freelancerId: app.freelancer_id,
+        establishmentId,
+        shiftId: app.shift_id,
+        rating,
+        comment,
+      });
+    },
+    onSuccess: (_res, { app, rating }) => {
+      setJustDone((s) => [...s, app.id]);
+      log({
+        kind: 'personne',
+        label: `${nameOf(app)} évalué·e ${rating}/5`,
+        detail: `${app.shift?.position_name ?? ''}${app.shift?.start_time ? ` · ${fmtDay(app.shift.start_time)}` : ''}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['pending-reviews'] });
+      queryClient.invalidateQueries({ queryKey: ['given-reviews'] });
+    },
+    onError: () => toast.error('Impossible d’enregistrer l’évaluation. Réessayez.'),
+  });
+
+  if (!open || !queue || queue.length === 0) return null;
+  const close = () => setOpen(false);
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
@@ -84,14 +148,14 @@ export function PendingReviewsDialog() {
           <div className="min-w-0">
             <h2 className="text-base font-extrabold text-se-ink">Évaluer vos auto-entrepreneurs</h2>
             <p className="text-xs text-se-muted">
-              {pending.length} mission{pending.length > 1 ? 's' : ''} terminée{pending.length > 1 ? 's' : ''} sans
+              {queue.length} mission{queue.length > 1 ? 's' : ''} terminée{queue.length > 1 ? 's' : ''} sans
               évaluation. Une note aide tout le monde : vous, pour la prochaine fois ; eux, pour leur profil.
             </p>
           </div>
           <button
             type="button"
             aria-label="Plus tard"
-            onClick={dismiss}
+            onClick={close}
             className="ml-auto w-8 h-8 grid place-items-center rounded-se-sm hover:bg-se-surface-2 text-se-muted"
           >
             <X className="w-5 h-5" />
@@ -99,22 +163,27 @@ export function PendingReviewsDialog() {
         </header>
 
         <ul className="flex-1 overflow-y-auto divide-y divide-se-line">
-          {pending.map((p) => {
-            const k = reviewKey(p.mission.id, p.person.name);
+          {queue.map((app) => {
+            const k = app.id;
             const d = drafts[k] ?? { rating: 0, comment: '' };
             const done = justDone.includes(k);
+            const saving = submit.isPending && submit.variables?.app.id === k;
+            const name = nameOf(app);
             return (
               <li key={k} className="px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-4">
                 <div className="flex items-center gap-3 min-w-0 sm:w-64 shrink-0">
-                  <Avatar person={p.person} size={40} />
+                  <FreelancerPhoto name={name} src={app.freelancer?.profile_photo_url} />
                   <div className="min-w-0">
-                    <p className="font-semibold text-se-ink truncate">{p.person.name}</p>
+                    <p className="font-semibold text-se-ink truncate">{name}</p>
                     <p className="text-xs text-se-muted truncate">
-                      {p.mission.poste} · {fmtDay(p.mission.date)}
+                      {app.shift?.position_name}
+                      {app.shift?.start_time ? ` · ${fmtDay(app.shift.start_time)}` : ''}
                     </p>
                     <p className="text-xs text-se-muted truncate">
-                      {p.mission.establishment} · {p.person.clockIn ?? p.mission.start}–
-                      {p.person.clockOut ?? p.mission.end}
+                      {app.shift?.establishments?.name}
+                      {app.shift?.start_time && app.shift?.end_time
+                        ? ` · ${fmtHm(app.shift.start_time)}–${fmtHm(app.shift.end_time)}`
+                        : ''}
                     </p>
                   </div>
                 </div>
@@ -157,11 +226,11 @@ export function PendingReviewsDialog() {
                         />
                         <button
                           type="button"
-                          disabled={d.rating === 0}
-                          onClick={() => save(p)}
+                          disabled={d.rating === 0 || saving}
+                          onClick={() => submit.mutate({ app, rating: d.rating, comment: d.comment })}
                           className="h-9 px-3.5 rounded-se-sm text-sm font-semibold bg-se-freelance text-white hover:opacity-90 disabled:opacity-40"
                         >
-                          Enregistrer
+                          {saving ? 'Enregistrement…' : 'Enregistrer'}
                         </button>
                       </div>
                     </>
@@ -174,11 +243,11 @@ export function PendingReviewsDialog() {
 
         <footer className="flex items-center gap-3 px-5 py-3 border-t border-se-line">
           <p className="text-xs text-se-muted">
-            Les évaluations apparaissent sur la fiche de la personne (« chez vous »).
+            Les évaluations apparaissent sur la fiche de l’auto-entrepreneur (« chez vous »).
           </p>
           <button
             type="button"
-            onClick={dismiss}
+            onClick={close}
             className="ml-auto h-9 px-4 rounded-se-sm text-sm font-semibold border border-se-line text-se-ink hover:bg-se-surface-2"
           >
             Plus tard

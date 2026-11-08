@@ -8,7 +8,9 @@
  *  · le journal des décisions de la session (onglet Historique de la cloche).
  */
 import { create } from 'zustand';
-import type { UsageMode } from '@/mocks/v2Settings';
+
+/** Mode d'usage : gestion complète (salariés + extras + auto-entrepreneurs) ou auto-entrepreneurs uniquement. */
+export type UsageMode = 'complete' | 'freelance';
 import type { SubscriptionPlan } from '@shared/types';
 
 /** Les quatre familles de notifications. */

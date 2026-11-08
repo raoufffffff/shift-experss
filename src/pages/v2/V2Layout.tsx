@@ -9,9 +9,9 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { CalendarDays, LayoutDashboard, Receipt, Settings, MessageSquare } from 'lucide-react';
 import { NotificationsBell } from '@/pages/v2/NotificationsPanel';
 import { PendingReviewsDialog } from '@/pages/v2/people/PendingReviewsDialog';
-import { MissionWindowHost } from '@/pages/v2/mission/MissionWindowHost';
 import { cn } from '@/lib/utils';
 import { useV2Ui } from '@/stores/v2UiStore';
+import { useAuthStore } from '@/stores/authStore';
 
 interface NavEntry {
   to: string;
@@ -22,6 +22,13 @@ interface NavEntry {
 
 export function V2Layout() {
   const mode = useV2Ui((s) => s.mode);
+  // Compte réel (plus de profil de maquette) : prénom + nom, établissement/société.
+  const user = useAuthStore((s) => s.user);
+  const company = useAuthStore((s) => s.company);
+  const fullName = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.email || '';
+  const initials =
+    [user?.first_name?.[0], user?.last_name?.[0]].filter(Boolean).join('').toUpperCase() ||
+    (user?.email?.[0] ?? '?').toUpperCase();
 
   // En Freelance uniquement : même structure (Planning · Factures · Réglages),
   // sans Personnes ni relevé d'heures — pas de gestion d'équipe.
@@ -65,11 +72,11 @@ export function V2Layout() {
         <div className="p-3 border-t border-se-line">
           <div className="flex items-center gap-3 px-2 py-1.5">
             <div className="w-8 h-8 rounded-full bg-se-blue text-white grid place-items-center text-xs font-bold">
-              AM
+              {initials}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-se-ink truncate">Alex Martin</p>
-              <p className="text-xs text-se-muted truncate">Brasserie du Centre</p>
+              <p className="text-sm font-semibold text-se-ink truncate">{fullName}</p>
+              <p className="text-xs text-se-muted truncate">{company?.name ?? ''}</p>
             </div>
           </div>
         </div>
@@ -106,8 +113,7 @@ export function V2Layout() {
       <NotificationsBell />
       {/* À la connexion : évaluer les auto-entrepreneurs des missions terminées */}
       <PendingReviewsDialog />
-      {/* La fenêtre de mission s'ouvre ici, par-dessus n'importe quel écran */}
-      <MissionWindowHost />
+      {/* La fenêtre de mission (MissionWindowHost) reviendra ici avec la migration du planning */}
     </div>
   );
 }
