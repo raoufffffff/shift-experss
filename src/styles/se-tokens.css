@@ -1,53 +1,117 @@
-/*
- * Jetons de design de l'espace client v2 (préfixe `se-`).
+/**
+ * Shift Express v2 — jeu de tokens unique (refonte espace client).
+ * Direction : Airbnb × Indeed × Instawork, corpo & urbain, thème clair.
+ * Source : prototype v88 (§1.8 du prompt de refonte + planche Parité).
  *
- * ⚠️  VALEURS PROVISOIRES — les jetons d'origine n'ont pas été fournis avec les
- * fichiers du nouveau design. Les noms correspondent exactement à ceux utilisés
- * dans `pages/v2/**` (bg-se-*, text-se-*, border-se-*, rounded-se*, shadow-se*,
- * font-display, .se-root) ; seules les couleurs/valeurs sont à remplacer par
- * celles de la maquette. Tout se règle ici, rien d'autre ne change.
- *
- * Thème clair uniquement (comme indiqué dans V2Layout).
+ * Portée : ces tokens sont la source de vérité du design v2. Ils sont
+ * consommés par la coquille v2 (classe `.se-root`) et par les écrans migrés.
+ * Les anciens écrans gardent leurs variables HSL jusqu'à leur remplacement ;
+ * à l'étape « suppressions », `.se-root` devient la racine par défaut.
  */
-.se-root {
-  --se-bg: #f6f7fb;
-  --se-surface: #ffffff;
-  --se-surface-2: #f0f2f8;
-  --se-line: #e3e6ef;
-  --se-line-soft: #eceff6;
-  --se-ink: #141a2e;
-  --se-muted: #667089;
 
-  --se-blue: #2347d8;
-  --se-blue-ink: #1b37a8;
-  --se-blue-wash: #e9eefd;
+:root {
+  /* Surfaces */
+  --se-bg: #f7f6f2;          /* fond général */
+  --se-surface: #ffffff;     /* cartes */
+  --se-surface-2: #fafaf7;   /* zones secondaires / en-têtes de section */
+  --se-ink: #121417;         /* encre (texte principal) */
+  --se-muted: #5a6473;       /* texte secondaire */
+  --se-line: #e7e5df;        /* bordures */
+  --se-line-soft: #eeede7;   /* séparateurs internes */
 
-  --se-success: #12805c;
-  --se-success-wash: #e3f6ee;
-  --se-danger: #d23b3b;
-  --se-danger-wash: #fdeaea;
+  /* Bleu de marque (système Employé) */
+  --se-blue: #2250f4;
+  --se-blue-ink: #1a3fc4;    /* hover / texte sur clair */
+  --se-blue-wash: #e8eeff;   /* fond doux */
 
-  /* Cascade (bascule programmée vers les auto-entrepreneurs) */
-  --se-cascade: #7a4fd6;
-  --se-cascade-ink: #5b35b0;
-  --se-cascade-wash: #f0eafc;
+  /* Système Cascade (orange) */
+  --se-cascade: #f28c28;
+  --se-cascade-ink: #9a4e00;
+  --se-cascade-wash: #fff1e0;
 
-  /* Auto-entrepreneurs / freelances */
-  --se-freelance: #c2650a;
-  --se-freelance-ink: #9a4e06;
-  --se-freelance-wash: #fdf1e2;
+  /* Système Freelance (rose, couleur de marque à conserver) */
+  --se-freelance: #ff0058;
+  --se-freelance-ink: #a3123c;
+  --se-freelance-wash: #fde8ec;
 
-  /* Extras (renforts ponctuels) */
-  --se-extra: #0f7f95;
-  --se-extra-ink: #0b6173;
-  --se-extra-wash: #e2f4f8;
+  /* Extra / CDD d'usage (violet) */
+  --se-extra: #7b61ff;
+  --se-extra-ink: #4a33b8;
+  --se-extra-wash: #efeaff;
 
+  /* Succès / couvert (vert) */
+  --se-success: #136c36;
+  --se-success-wash: #e6f6ec;
+
+  /* Manque / alerte (rouge) */
+  --se-danger: #a3123c;
+  --se-danger-wash: #fde8ec;
+
+  /* Neutres de statut */
+  --se-neutral-ink: #3a4250;
+  --se-neutral-wash: #f1f0eb;
+
+  /* Rayons (angles 12–14 px) */
   --se-radius: 14px;
   --se-radius-sm: 10px;
-  --se-shadow: 0 1px 2px rgba(20, 26, 46, 0.06), 0 1px 3px rgba(20, 26, 46, 0.08);
-  --se-shadow-md: 0 4px 12px rgba(20, 26, 46, 0.1), 0 2px 4px rgba(20, 26, 46, 0.06);
+  --se-radius-chip: 999px;
 
+  /* Typo */
+  --se-font-display: "Urbanist", "Plus Jakarta Sans", system-ui, sans-serif;
+  --se-font-body: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+
+  /* Ombres douces (pas de dégradés, pas de bordure gauche) */
+  --se-shadow-sm: 0 1px 2px rgba(18, 20, 23, 0.05);
+  --se-shadow-md: 0 6px 20px -8px rgba(18, 20, 23, 0.14);
+}
+
+/* Racine de la coquille v2 : applique le thème clair sans toucher au reste. */
+.se-root {
   background: var(--se-bg);
   color: var(--se-ink);
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-family: var(--se-font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.se-root h1,
+.se-root h2,
+.se-root h3 {
+  font-family: var(--se-font-display);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+/* Étiquettes en capitales (éyebrows / en-têtes de colonnes) */
+.se-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--se-muted);
+}
+
+/* Badge d'état (la couleur de fond/texte vient d'une classe utilitaire se-*) */
+.se-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Shift annulé : hachures grises, il reste à sa place dans le planning (lecture seule) */
+.se-hatched {
+  background-color: var(--se-surface-2, #f1f5f9);
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(100, 116, 139, 0.16) 0 5px,
+    transparent 5px 11px
+  );
 }
