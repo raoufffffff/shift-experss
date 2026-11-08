@@ -10,6 +10,7 @@ import { useEstablishmentStore } from '@/stores/establishmentStore';
 import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/lib/utils';
 import { MissionCard } from './MissionCard';
+import { ShiftWindow } from './ShiftWindow';
 import { usePlanningMissions, usePlanningEstablishments, type PlanningMission } from './usePlanningMissions';
 import { addDays, mondayOf, todayISO, fmtDay, parseISO, toISO } from './dates';
 
@@ -89,7 +90,8 @@ export function RealPlanningPage() {
   const { placed, required } = sum(inPeriod);
   const coverage = required > 0 ? Math.round((placed / required) * 100) : null;
 
-  const open = (id: string) => navigate(`/${locale}/shifts/${id}`);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const open = (id: string) => setOpenId(id);
   const publish = () => navigate(`/${locale}/shifts/new`);
 
   return (
@@ -193,6 +195,7 @@ export function RealPlanningPage() {
           }}
         />
       )}
+      {openId && <ShiftWindow shiftId={openId} onClose={() => setOpenId(null)} />}
     </div>
   );
 }

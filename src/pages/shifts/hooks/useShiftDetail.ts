@@ -118,8 +118,10 @@ function computeShiftQuote(s: LinkedShift) {
     return { rate, netHours, staffCount, baseCost, commission, totalTTC, feeRate };
 }
 
-export function useShiftDetail() {
-    const { id } = useParams<{ id: string }>();
+export function useShiftDetail(shiftIdOverride?: string) {
+    const params = useParams<{ id: string }>();
+    // La nouvelle fenêtre de mission passe l'id directement (pas de route /shifts/:id)
+    const id = shiftIdOverride ?? params.id;
     const { navigate } = useLocale();
     const queryClient = useQueryClient();
     const user = useAuthStore((state) => state.user);
