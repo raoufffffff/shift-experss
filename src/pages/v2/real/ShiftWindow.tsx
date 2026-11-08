@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { useShiftDetail } from '@/pages/shifts/hooks/useShiftDetail';
 import { coverageBand, Face } from './MissionCard';
+import { PersonWindow, type PersonRef } from './PersonWindow';
 import type { PlacedPerson } from './usePlanningMissions';
 
 const DEFAULT_TZ = 'Europe/Paris';
@@ -33,6 +34,7 @@ const STATUS_LABEL: Record<string, string> = {
 interface Candidate {
   key: string;
   appId: string;
+  personId: string;
   kind: 'salarie' | 'freelance';
   name: string;
   sub: string;
@@ -48,12 +50,14 @@ export function ShiftWindow({ shiftId, onClose }: { shiftId: string; onClose: ()
   const queryClient = useQueryClient();
   const { shift, isLoading, freelancerApplications, hasAcceptedApplicant, mutations } = useShiftDetail(shiftId);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [person, setPerson] = useState<PersonRef | null>(null);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    // Si le profil d'une personne est ouvert, Échap ne ferme que lui (géré dans PersonWindow)
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !person && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, person]);
 
   // Refus d'un salarié (la fiche existante ne le fait que via la page Candidatures)
   const rejectEmployee = useMutation({
@@ -77,23 +81,23 @@ export function ShiftWindow({ shiftId, onClose }: { shiftId: string; onClose: ()
   const required: number = s?.required_employees || 1;
 
   const { placed, candidates } = useMemo(() => {
-    const placed: (PlacedPerson & { sub: string })[] = [];
+    const placed: (PlacedPerson & { sub: string; personId: string })[] = [];
     const candidates: Candidate[] = [];
     for (const a of (s?.shift_applications ?? []) as any[]) {
       const name = [a.user?.first_name, a.user?.last_name].filter(Boolean).join(' ') || a.user?.email || 'Salarié';
       if (a.status === 'accepted')
-        placed.push({ id: `e-${a.id}`, name, photo: a.user?.avatar_url ?? null, kind: 'salarie', sub: a.user?.email ?? '' });
+        placed.push({ id: `e-${a.id}`, personId: a.user_id, name, photo: a.user?.avatar_url ?? null, kind: 'salarie', sub: a.user?.email ?? '' });
       else if (a.status === 'applied' || a.status === 'pending')
-        candidates.push({ key: `e-${a.id}`, appId: a.id, kind: 'salarie', name, sub: a.user?.email ?? '', photo: a.user?.avatar_url ?? null });
+        candidates.push({ key: `e-${a.id}`, appId: a.id, personId: a.user_id, kind: 'salarie', name, sub: a.user?.email ?? '', photo: a.user?.avatar_url ?? null });
     }
     for (const a of (freelancerApplications ?? []) as any[]) {
       const name = [a.freelancer?.first_name, a.freelancer?.last_name].filter(Boolean).join(' ') || 'Auto-entrepreneur';
       const sub = [a.freelancer?.city, a.freelancer?.phone].filter(Boolean).join(' · ');
       if (a.status === 'accepted')
-        placed.push({ id: `f-${a.id}`, name, photo: a.freelancer?.profile_photo_url ?? null, kind: 'freelance', sub });
+        placed.push({ id: `f-${a.id}`, personId: a.freelancer_id, name, photo: a.freelancer?.profile_photo_url ?? null, kind: 'freelance', sub });
       else if (a.status === 'applied')
         candidates.push({
-          key: `f-${a.id}`, appId: a.id, kind: 'freelance', name, sub,
+          key: `f-${a.id}`, appId: a.id, personId: a.freelancer_id, kind: 'freelance', name, sub,
           photo: a.freelancer?.profile_photo_url ?? null, rate: a.freelance_hourly_rate, viaCall: a.applied_via_call,
         });
     }
@@ -170,11 +174,13 @@ export function ShiftWindow({ shiftId, onClose }: { shiftId: string; onClose: ()
                   <ul className="space-y-2">
                     {placed.map((p) => (
                       <li key={p.id} className="flex items-center gap-3 rounded-se border border-se-line bg-se-surface p-3">
-                        <Face p={p} size={36} />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-se-ink truncate">{p.name}</p>
-                          <p className="text-xs text-se-muted truncate">{p.sub}</p>
-                        </div>
+                        <button type="button" onClick={() => setPerson({ kind: p.kind, id: p.personId, name: p.name, photo: p.photo, showContact: true })} className="flex items-center gap-3 min-w-0 flex-1 text-left" aria-label={`Ouvrir le profil de ${p.name}`}>
+                          <Face p={p} size={36} />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-semibold text-se-ink truncate">{p.name}</span>
+                            <span className="block text-xs text-se-muted truncate">{p.sub}</span>
+                          </span>
+                        </button>
                         <span className={`se-badge ${p.kind === 'freelance' ? 'bg-se-freelance-wash text-se-freelance-ink' : 'bg-se-blue-wash text-se-blue-ink'}`}>
                           {p.kind === 'freelance' ? 'Auto-entrepreneur' : 'Salarié'}
                         </span>
@@ -197,11 +203,13 @@ export function ShiftWindow({ shiftId, onClose }: { shiftId: string; onClose: ()
                     {candidates.map((c) => (
                       <li key={c.key} className="rounded-se border border-se-line bg-se-surface p-3">
                         <div className="flex items-center gap-3">
-                          <Face p={{ id: c.key, name: c.name, photo: c.photo, kind: c.kind }} size={36} />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-se-ink truncate">{c.name}</p>
-                            <p className="text-xs text-se-muted truncate">{c.sub}</p>
-                          </div>
+                          <button type="button" onClick={() => setPerson({ kind: c.kind, id: c.personId, name: c.name, photo: c.photo })} className="flex items-center gap-3 min-w-0 flex-1 text-left" aria-label={`Ouvrir le profil de ${c.name}`}>
+                            <Face p={{ id: c.key, name: c.name, photo: c.photo, kind: c.kind }} size={36} />
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-semibold text-se-ink truncate">{c.name}</span>
+                              <span className="block text-xs text-se-muted truncate">{c.sub}</span>
+                            </span>
+                          </button>
                           <span className={`se-badge ${c.kind === 'freelance' ? 'bg-se-freelance-wash text-se-freelance-ink' : 'bg-se-blue-wash text-se-blue-ink'}`}>
                             {c.kind === 'freelance' ? 'Auto-entrepreneur' : 'Salarié'}
                           </span>
@@ -295,6 +303,7 @@ export function ShiftWindow({ shiftId, onClose }: { shiftId: string; onClose: ()
           </>
         )}
       </aside>
+      {person && <PersonWindow person={person} onClose={() => setPerson(null)} />}
     </div>
   );
 }
