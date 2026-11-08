@@ -11,13 +11,14 @@ import { X, Check, ExternalLink, Loader2, MapPin, Clock, Ban, Timer, BadgeCheck,
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { useShiftDetail } from '@/pages/shifts/hooks/useShiftDetail';
-import { AdjustHoursDialog } from '@/components/shifts/AdjustHoursDialog';
-import { ValidateShiftDialog } from '@/components/shifts/ValidateShiftDialog';
-import { BoostShiftDialog } from '@/components/shifts/BoostShiftDialog';
-import { RescheduleShiftDialog } from '@/components/shifts/RescheduleShiftDialog';
-import { AutoCallDialog } from '@/pages/shifts/components/AutoCallDialog';
-import { ConvertToEmployeesDialog } from '@/pages/shifts/components/ConvertToEmployeesDialog';
-import { ExtendShiftDialog } from '@/pages/shifts/components/ExtendShiftDialog';
+
+import { AdjustHours } from './dialogs/AdjustHours';
+import { ValidateHours } from './dialogs/ValidateHours';
+import { Boost } from './dialogs/Boost';
+import { Reschedule } from './dialogs/Reschedule';
+import { AutoCall } from './dialogs/AutoCall';
+import { Convert } from './dialogs/Convert';
+import { Extend } from './dialogs/Extend';
 import { coverageBand, Face } from './MissionCard';
 import { PersonWindow, type PersonRef } from './PersonWindow';
 import type { PlacedPerson } from './usePlanningMissions';
@@ -376,26 +377,26 @@ function ActionBtn({ icon: Icon, label, onClick, primary, disabled }: { icon: ty
   );
 }
 
-/** Dialogues existants (logique + Supabase inchangés), ouverts depuis les actions de la fenêtre. */
+/** Dialogues du nouveau design (mêmes mutations et mêmes tables que la fiche existante). */
 function WindowDialogs({ shift, detail, isExtendOpen, setIsExtendOpen }: { shift: any; detail: ReturnType<typeof useShiftDetail>; isExtendOpen: boolean; setIsExtendOpen: (v: boolean) => void }) {
   if (!shift || !detail.isAdminOrManager) return null;
   const d = detail;
+  const acceptedFreelancers = d.freelancerApplications.filter((a: any) => a.status === 'accepted').length;
   return (
     <>
-      <AdjustHoursDialog open={d.adjustHoursDialogOpen} onOpenChange={d.setAdjustHoursDialogOpen} shift={shift} />
-      <ValidateShiftDialog isOpen={d.isValidateDialogOpen} onClose={() => d.setIsValidateDialogOpen(false)} shift={shift} />
-      <BoostShiftDialog shift={shift as any} isOpen={d.isBoostDialogOpen} onClose={() => d.setIsBoostDialogOpen(false)} onSuccess={() => undefined} />
-      <AutoCallDialog
+      <AdjustHours shift={shift} open={d.adjustHoursDialogOpen} onClose={() => d.setAdjustHoursDialogOpen(false)} />
+      <ValidateHours shift={shift} acceptedFreelancers={acceptedFreelancers} open={d.isValidateDialogOpen} onClose={() => d.setIsValidateDialogOpen(false)} />
+      <Boost shift={shift} open={d.isBoostDialogOpen} onClose={() => d.setIsBoostDialogOpen(false)} />
+      <AutoCall
         open={d.isAutoCallDialogOpen}
-        onOpenChange={d.setIsAutoCallDialogOpen}
+        onClose={() => d.setIsAutoCallDialogOpen(false)}
         status={d.autoCallStatus}
         isPending={d.mutations.setAutoCalls.isPending}
         onToggle={(enabled) => d.mutations.setAutoCalls.mutate(enabled)}
-        t={d.t}
       />
-      <ConvertToEmployeesDialog
+      <Convert
         open={d.isConvertDialogOpen}
-        onOpenChange={d.setIsConvertDialogOpen}
+        onClose={() => d.setIsConvertDialogOpen(false)}
         shift={{ id: shift.id, company_id: shift.company_id, establishment_id: shift.establishment_id }}
         alreadyInvitedUserIds={(shift.shift_applications || [])
           .filter((a: any) => ['pending', 'applied', 'accepted'].includes(a.status))
@@ -403,17 +404,16 @@ function WindowDialogs({ shift, detail, isExtendOpen, setIsExtendOpen }: { shift
         daysCount={d.eventGroupSummary?.daysCount ?? 1}
         pendingFreelancerCount={d.freelancerApplications.filter((a: any) => a.status === 'applied').length}
         isPending={d.mutations.convertToEmployees.isPending}
-        onConfirm={(userIds: string[]) => d.mutations.convertToEmployees.mutate(userIds)}
+        onConfirm={(userIds) => d.mutations.convertToEmployees.mutate(userIds)}
       />
-      <RescheduleShiftDialog
+      <Reschedule
         open={d.isRescheduleDialogOpen}
-        onOpenChange={d.setIsRescheduleDialogOpen}
+        onClose={() => d.setIsRescheduleDialogOpen(false)}
         shifts={d.rescheduleTargetShifts}
         isPending={d.mutations.rescheduleShift.isPending}
-        onConfirm={(entries: any) => d.mutations.rescheduleShift.mutate(entries)}
-        t={d.t}
+        onConfirm={(entries) => d.mutations.rescheduleShift.mutate(entries)}
       />
-      {shift.status === 'completed' && <ExtendShiftDialog shift={shift} open={isExtendOpen} onOpenChange={setIsExtendOpen} />}
+      {shift.status === 'completed' && <Extend shift={shift} open={isExtendOpen} onClose={() => setIsExtendOpen(false)} />}
     </>
   );
 }
