@@ -1,10 +1,6 @@
-/**
- * Accueil de la v2 : le Planning, quel que soit le mode d'usage. En Freelance
- * uniquement, le planning se présente pareil mais ne propose que la
- * publication aux auto-entrepreneurs (pas de placement direct, pas de cascade).
- */
-import { PlanningPage } from './PlanningPage';
+/** Accueil de l'espace client : le Planning, branché sur les shifts réels. */
+import { RealPlanningPage } from './real/RealPlanningPage';
 
 export function HomeRoute() {
-  return <PlanningPage />;
+  return <RealPlanningPage />;
 }

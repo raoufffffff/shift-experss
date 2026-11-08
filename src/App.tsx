@@ -1,5 +1,5 @@
 import { useEffect, useRef, lazy, Suspense } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from './stores/authStore'
 import { supabase } from './lib/supabase'
@@ -27,7 +27,6 @@ const EmailConfirmedPage = lazy(() => import('./pages/auth/EmailConfirmedPage').
 // Dashboard pages
 const InvoiceViewPage = lazy(() => import('./pages/invoices/InvoiceViewPage').then(m => ({ default: m.InvoiceViewPage })))
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })))
-const ShiftsPage = lazy(() => import('./pages/shifts/ShiftsPage').then(m => ({ default: m.ShiftsPage })))
 const ShiftDetailPage = lazy(() => import('./pages/shifts/ShiftDetailPage').then(m => ({ default: m.ShiftDetailPage })))
 const CreateShiftPage = lazy(() => import('./pages/shifts/CreateShiftPage').then(m => ({ default: m.CreateShiftPage })))
 const EmployeesPage = lazy(() => import('./pages/employees/EmployeesPage').then(m => ({ default: m.EmployeesPage })))
@@ -276,7 +275,7 @@ useEffect(() => {
               >
                 <Route index element={<PageErrorBoundary pageName="Dashboard"><DashboardPage /></PageErrorBoundary>} />
                 <Route path="messages" element={<ChatPage />} />
-                <Route path="shifts" element={<ShiftsPage />} />
+                <Route path="shifts" element={<ShiftsToPlanning />} />
                 <Route path="shifts/new" element={<CreateShiftPage />} />
                 <Route path="shifts/:id" element={<ShiftDetailPage />} />
                 <Route path="employees" element={<EmployeesPage />} />
@@ -326,6 +325,11 @@ useEffect(() => {
       </Suspense>
     </>
   )
+}
+
+function ShiftsToPlanning() {
+  const { locale = 'fr' } = useParams<{ locale: string }>()
+  return <Navigate to={`/${locale}/v2`} replace />
 }
 
 export default App
