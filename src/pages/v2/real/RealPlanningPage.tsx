@@ -4,13 +4,13 @@
  * détail du shift ; « Publier un shift » ouvre la création existante.
  */
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import { CalendarDays, ChevronLeft, ChevronRight, Building2, Plus, Loader2 } from 'lucide-react';
 import { useEstablishmentStore } from '@/stores/establishmentStore';
 import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/lib/utils';
 import { MissionCard } from './MissionCard';
 import { ShiftWindow } from './ShiftWindow';
+import { PublishPanel } from './PublishPanel';
 import { usePlanningMissions, usePlanningEstablishments, type PlanningMission } from './usePlanningMissions';
 import { addDays, mondayOf, todayISO, fmtDay, parseISO, toISO } from './dates';
 
@@ -39,8 +39,6 @@ const tone = (placed: number, required: number) =>
   required <= 0 ? 'text-se-muted' : placed >= required ? 'text-se-success' : placed <= 0 ? 'text-se-danger' : 'text-se-cascade-ink';
 
 export function RealPlanningPage() {
-  const navigate = useNavigate();
-  const { locale = 'fr' } = useParams<{ locale: string }>();
   const user = useAuthStore((s) => s.user);
   const { selectedEstablishmentId, setSelectedEstablishment } = useEstablishmentStore();
   const { data: establishments = [] } = usePlanningEstablishments();
@@ -92,7 +90,8 @@ export function RealPlanningPage() {
 
   const [openId, setOpenId] = useState<string | null>(null);
   const open = (id: string) => setOpenId(id);
-  const publish = () => navigate(`/${locale}/shifts/new`);
+  const [publishing, setPublishing] = useState(false);
+  const publish = () => setPublishing(true);
 
   return (
     <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
@@ -195,6 +194,7 @@ export function RealPlanningPage() {
           }}
         />
       )}
+      {publishing && <PublishPanel onClose={() => setPublishing(false)} />}
       {openId && <ShiftWindow shiftId={openId} onClose={() => setOpenId(null)} />}
     </div>
   );
