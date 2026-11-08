@@ -9,8 +9,10 @@ import { motion } from 'framer-motion'
 import { logger } from '@/utils/logger'
 import { useLocale } from '@/hooks/useLocale'
 import { LocalizedLink } from '@/components/LocalizedLink'
+import { useLocation } from 'react-router-dom'
 
 export function LoginPage() {
+  const location = useLocation()
   const { setTheme } = useTheme()
 
   // Force light mode on this page
@@ -43,7 +45,13 @@ export function LoginPage() {
       clearTimeout(timeoutId)
       setIsLoading(false)
       toast.success(t('auth.loginSuccess'))
-      navigate('/')
+      // Retour à la page demandée avant la redirection (ex. /fr/v2), sinon l'accueil.
+      // `navigate` (useLocale) ajoute lui-même le préfixe de langue : on l'enlève ici.
+      const from = (location.state as { from?: { pathname?: string; search?: string } } | null)?.from
+      const target = from?.pathname
+        ? `${from.pathname.replace(/^\/[a-z]{2}(?=\/|$)/, '') || '/'}${from.search ?? ''}`
+        : '/'
+      navigate(target.startsWith('/login') ? '/' : target)
     } catch (error) {
       clearTimeout(timeoutId)
       setIsLoading(false)

@@ -13,6 +13,7 @@ import { useNavigationProgress } from './hooks/useNavigationProgress'
 import { toast } from 'sonner'
 import { PageErrorBoundary } from './components/ui/PageErrorBoundary'
 import EstablishmentsRates from './pages/establishments/EstablishmentsRates'
+import { V2RequireAuth } from './pages/v2/RequireAuth'
 
 // ✅ Lazy loading des pages pour réduire le bundle initial (-60%)
 // Auth pages
@@ -302,15 +303,13 @@ useEffect(() => {
                 <Route path="admin/audit-logs" element={<PageErrorBoundary pageName="AuditLogs"><AuditLogsPage /></PageErrorBoundary>} />
               </Route>
 
-              {/* Refonte v2 : /:locale/v2 (mêmes droits que l'espace actuel) */}
+              {/* Refonte v2 : /:locale/v2 — sans session → /:locale/login (retour sur la v2 après connexion) */}
               <Route
                 path="v2"
                 element={
-                  user && (user.role === 'admin' || user.role === 'manager') ? (
+                  <V2RequireAuth>
                     <V2Layout />
-                  ) : (
-                    <Navigate to="../login" replace />
-                  )
+                  </V2RequireAuth>
                 }
               >
                 <Route index element={<V2HomeRoute />} />
